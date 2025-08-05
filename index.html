@@ -87,9 +87,34 @@
         margin: 8px 0;
       }
     }
+
+    /* ช่องค้นหา */
+    #searchContainer {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #searchInput {
+      padding:8px;
+      width:70%;
+      max-width: 300px;
+      font-size:1rem;
+      border-radius:5px;
+      border:1px solid #ccc;
+    }
   </style>
 </head>
 <body>
+
+<!-- ช่องค้นหาเลขออเดอร์ -->
+<div id="searchContainer">
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="กรอกเลขออเดอร์ เช่น 240804-001"
+  />
+  <button id="searchBtn">ค้นหา</button>
+</div>
 
 <div id="output"><h1>Loading...</h1></div>
 
@@ -108,7 +133,8 @@
       status: "สถานะ",
       updated: "อัปเดตล่าสุด",
       back: "ย้อนกลับ",
-      share: "แชร์ออเดอร์นี้"
+      share: "แชร์ออเดอร์นี้",
+      searchAlert: "กรุณากรอกเลขออเดอร์ก่อนกดค้นหา"
     },
     en: {
       allOrders: "All Parcel Orders",
@@ -119,7 +145,8 @@
       status: "Status",
       updated: "Last Updated",
       back: "Go Back",
-      share: "Share Order"
+      share: "Share Order",
+      searchAlert: "Please enter an order ID before searching"
     }
   }[lang];
 
@@ -165,6 +192,27 @@
         </div>` : ""}
       </div>
     `;
+  }
+
+  // ฟังก์ชันค้นหาเลขออเดอร์
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
+
+  searchBtn.addEventListener("click", () => {
+    const val = searchInput.value.trim();
+    if (val) {
+      // เปลี่ยน URL พร้อม reload หน้า (ให้ URL มี ?id=เลขที่กรอก)
+      const baseUrl = window.location.origin + window.location.pathname;
+      const newUrl = `${baseUrl}?id=${encodeURIComponent(val)}&lang=${lang}`;
+      window.location.href = newUrl;
+    } else {
+      alert(text.searchAlert);
+    }
+  });
+
+  // หากมี ?id= ใน URL ให้นำมาแสดงในช่องค้นหา
+  if(orderId){
+    searchInput.value = orderId;
   }
 </script>
 
