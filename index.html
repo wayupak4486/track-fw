@@ -6,24 +6,26 @@
   <style>
     body {
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 600px;
+      max-width: 800px;
       margin: 40px auto;
       padding: 20px;
       background: #f9f9f9;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
+
     .card {
       background: white;
       padding: 24px;
+      margin-bottom: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       text-align: center;
     }
+
     h1 {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       color: #333;
     }
+
     img {
       max-width: 100%;
       height: auto;
@@ -31,60 +33,138 @@
       margin: 20px 0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
+
     p {
       font-size: 1.1rem;
       color: #555;
       margin: 8px 0;
     }
+
     .status {
       font-weight: bold;
       font-size: 1.2rem;
       color: #0a74da;
       margin-top: 12px;
     }
+
     .error {
       color: #b00020;
       font-weight: bold;
       font-size: 1.2rem;
       text-align: center;
     }
+
+    .buttons {
+      margin-top: 20px;
+    }
+
+    button {
+      background: #0a74da;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 0 8px;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background: #094a9e;
+    }
+
+    @media screen and (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      p, .status {
+        font-size: 1rem;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
   </style>
 </head>
 <body>
 
-<div class="card" id="output">
-  <h1>กำลังโหลดข้อมูล...</h1>
-</div>
+<div id="output"><h1>Loading...</h1></div>
 
 <script>
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get("id");
+  const lang = params.get("lang") || "th"; // รองรับภาษา
+
+  const text = {
+    th: {
+      allOrders: "รายการพัสดุทั้งหมด",
+      notFound: "ไม่พบข้อมูลพัสดุเลขนี้",
+      missingId: "กรุณาระบุเลขออเดอร์ใน URL เช่น ?id=240804-001",
+      loading: "กำลังโหลดข้อมูล...",
+      customer: "ชื่อลูกค้า",
+      status: "สถานะ",
+      updated: "อัปเดตล่าสุด",
+      back: "ย้อนกลับ",
+      share: "แชร์ออเดอร์นี้"
+    },
+    en: {
+      allOrders: "All Parcel Orders",
+      notFound: "Order not found",
+      missingId: "Please specify order ID in URL, e.g. ?id=240804-001",
+      loading: "Loading...",
+      customer: "Customer Name",
+      status: "Status",
+      updated: "Last Updated",
+      back: "Go Back",
+      share: "Share Order"
+    }
+  }[lang];
 
   const output = document.getElementById("output");
+  output.innerHTML = `<h1>${text.loading}</h1>`;
 
-  if (!orderId) {
-    output.innerHTML = `<p class="error">กรุณาระบุเลขออเดอร์ใน URL เช่น ?id=240804-001</p>`;
-  } else {
-    fetch("https://script.google.com/macros/s/AKfycbxNafeUxqZ-m91C32Tey3q_K8bY3YQWhgLCECAo0M3xYq0N4MfjzqM-98zsw3Hdr3Di/exec")
-      .then(res => res.json())
-      .then(data => {
+  fetch("https://script.google.com/macros/s/AKfycbxNafeUxqZ-m91C32Tey3q_K8bY3YQWhgLCECAo0M3xYq0N4MfjzqM-98zsw3Hdr3Di/exec")
+    .then(res => res.json())
+    .then(data => {
+      output.innerHTML = "";
+
+      if (!orderId) {
+        output.innerHTML = `<h1>${text.allOrders}</h1>`;
+        data.forEach(item => {
+          output.innerHTML += createCard(item);
+        });
+      } else {
         const found = data.find(item => item.order_id === orderId);
         if (found) {
-          output.innerHTML = `
-            <h1>เลขออเดอร์: ${found.order_id}</h1>
-            <img src="${found.product_image}" alt="รูปสินค้า" />
-            <p><strong>ชื่อลูกค้า:</strong> ${found.customer_name}</p>
-            <p class="status">สถานะ: ${found.status}</p>
-            <p><small>อัปเดตล่าสุด: ${found.updated_at}</small></p>
-          `;
+          output.innerHTML = createCard(found, true);
         } else {
-          output.innerHTML = `<p class="error">ไม่พบข้อมูลพัสดุเลขนี้</p>`;
+          output.innerHTML = `<p class="error">${text.notFound}</p>`;
         }
-      })
-      .catch(error => {
-        console.error(error);
-        output.innerHTML = `<p class="error">เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง</p>`;
-      });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      output.innerHTML = `<p class="error">Error loading data. Please try again.</p>`;
+    });
+
+  function createCard(item, showButtons = false) {
+    return `
+      <div class="card">
+        <h1>เลขออเดอร์: ${item.order_id}</h1>
+        <img src="${item.product_image}" alt="Product Image" />
+        <p><strong>${text.customer}:</strong> ${item.customer_name}</p>
+        <p class="status">${text.status}: ${item.status}</p>
+        <p><small>${text.updated}: ${item.updated_at}</small></p>
+        ${showButtons ? `
+        <div class="buttons">
+          <button onclick="history.back()">${text.back}</button>
+          <button onclick="navigator.share ? navigator.share({ title: 'Order ${item.order_id}', url: window.location.href }) : alert('Share not supported')">${text.share}</button>
+        </div>` : ""}
+      </div>
+    `;
   }
 </script>
 
